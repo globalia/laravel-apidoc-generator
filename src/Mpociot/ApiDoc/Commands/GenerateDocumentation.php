@@ -71,8 +71,6 @@ class GenerateDocumentation extends Command
         $routePrefix = $this->option('routePrefix');
         $middleware = $this->option('middleware');
 
-        $this->setUserToBeImpersonated($this->option('actAsUserId'));
-
         if ($routePrefix === null && ! count($allowedRoutes) && $middleware === null) {
             $this->error('You must provide either a route prefix or a route or a middleware to generate the documentation.');
 
@@ -220,16 +218,30 @@ class GenerateDocumentation extends Command
     private function setUserToBeImpersonated($actAs)
     {
         if (! empty($actAs)) {
+            $user = $this->getUser($actAs);
             if (version_compare($this->laravel->version(), '5.2.0', '<')) {
-                $userModel = config('auth.model');
-                $user = $userModel::find((int) $actAs);
-                $this->laravel['auth']->setUser($user);
+                auth()->setUser($user);
             } else {
-                $provider = $this->option('authProvider');
-                $userModel = config("auth.providers.$provider.model");
-                $user = $userModel::find((int) $actAs);
-                $this->laravel['auth']->guard($this->option('authGuard'))->setUser($user);
+                auth()->guard($this->option('authGuard'))->setUser($user);
             }
+        }
+    }
+
+    /**
+     * @param $actAs
+     * @return \Illuminate\Auth\Authenticatable|null
+     */
+    private function getUser($actAs)
+    {
+        if (null !== $this->user && $this->user->getAuthIdentifier() == $actAs) {
+            return $this->user;
+        } elseif (version_compare($this->laravel->version(), '5.2.0', '<')) {
+            $userModel = config('auth.model');
+            return $this->user = $userModel::find($actAs);
+        } else {
+            $provider = $this->option('authProvider');
+            $userModel = config("auth.providers.$provider.model");
+            return $this->user = $userModel::find($actAs);
         }
     }
 
@@ -261,6 +273,7 @@ class GenerateDocumentation extends Command
         foreach ($routes as $route) {
             if (in_array($route->getName(), $allowedRoutes) || str_is($routePrefix, $generator->getUri($route)) || in_array($middleware, $route->middleware())) {
                 if ($this->isValidRoute($route) && $this->isRouteVisibleForDocumentation($route->getAction()['uses'])) {
+                    $this->setUserToBeImpersonated($this->option('actAsUserId'));   // since processRoute will restart the kernel, we need to do that for each route
                     $parsedRoutes[] = $generator->processRoute($route, $bindings, $this->option('header'), $withResponse);
                     $this->info('Processed route: ['.implode(',', $generator->getMethods($route)).'] '.$generator->getUri($route));
                 } else {

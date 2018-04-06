@@ -140,11 +140,10 @@ class LaravelGenerator extends AbstractGenerator
 
         $kernel->terminate($request, $response);
 
-        // @see https://github.com/mpociot/laravel-apidoc-generator/issues/188
-        /*if (file_exists($file = App::bootstrapPath().'/app.php')) {
+        if (file_exists($file = App::bootstrapPath().'/app.php')) {
             $app = require $file;
             $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
-        }*/
+        }
 
         return $response;
     }
