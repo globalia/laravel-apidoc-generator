@@ -44,6 +44,8 @@ class GenerateDocumentation extends Command
      */
     protected $description = 'Generate your API documentation from existing Laravel routes.';
 
+    protected $user;
+
     /**
      * Create a new command instance.
      *
