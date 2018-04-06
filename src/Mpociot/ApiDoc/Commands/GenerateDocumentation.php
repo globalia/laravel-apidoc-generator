@@ -79,7 +79,7 @@ class GenerateDocumentation extends Command
             return false;
         }
 
-        $generator->prepareMiddleware($this->option('useMiddlewares'));
+        $generator->prepareMiddleware(!$this->option('useMiddlewares'));
 
         if ($this->option('router') === 'laravel') {
             $parsedRoutes = $this->processLaravelRoutes($generator, $allowedRoutes, $routePrefix, $middleware);
